@@ -172,11 +172,14 @@ public class BotBody extends TelegramLongPollingBot {
              int wait = Integer.parseInt(notificationTime);
              try {
                  Thread.sleep(wait * 1000);
-                 SendMessage alarmNotification = new SendMessage()
+                SendMessage alarmNotification = new SendMessage()
                          .setParseMode("HTML");
                  alarmNotification
                          .setChatId(update.getMessage().getChatId())
-                         .setText("<code>Wake up neo</code>");
+                         .setText("<code>Wake up, Neo..</code>" + "\n" +
+                                  "<code>The Matrix has you...</code>" + "\n" +
+                                  "<code>Follow the white rabbit.</code>" + "\n" + "\n" +
+                                  "<code>Knock, knock, Neo.</code>");
                  int x = 0;
                  while (x<1){
                      execute(alarmNotification);
