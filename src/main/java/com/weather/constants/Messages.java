@@ -18,6 +18,12 @@ public class Messages {
     final static String cloud = EmojiParser.parseToUnicode(":cloud:");
     final static String snow = EmojiParser.parseToUnicode(":snowflake:");
 
+    public final static String DEF_MESSAGE = "Select any option";
+    public final static String TODAY_WEATHER_HELP_MESSAGE = "First input your city like:" + "\n" + "<i>Львів</i>";
+    public final static String CITY_UPDATE_MESSAGE = "<b>Your location is changed to:</b>";
+    public final static String WEEK_FORECAST_HELP_MESSAGE = "<b>Write your city for week forecast</b>";
+
+
     public static String getWeekForecastMessage(String URL) throws IOException {
         String weekForecast = "<b>" + weatherHandler.getDay(URL,0,0) + "</b>" + "\n"  +
                 "<i>-Min temperature:</i>" + weatherHandler.getMinTemperature(URL, 0) + "\n" +

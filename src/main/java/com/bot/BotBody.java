@@ -14,6 +14,8 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import java.io.IOException;
+
+import static com.weather.constants.Messages.*;
 import static com.weather.constants.Selectors.MORNING_WIND;
 
 /**
@@ -21,35 +23,40 @@ import static com.weather.constants.Selectors.MORNING_WIND;
  */
 public class BotBody extends TelegramLongPollingBot {
     final static Logger LOG = Logger.getLogger(BotBody.class);
+    private String firstUserName;
+    private String lastUserName;
+    private long userId;
+    private String userText;
 
-    private TemperatureHandler temperatureHandler = new TemperatureHandler();
-    private CloudCoverHandler cloudCoverHandler = new CloudCoverHandler();
-    private WindSpeedHandler windSpeedHandler = new WindSpeedHandler();
-    private WeatherHandler weatherHandler = new WeatherHandler();
+    private static String URL = "";
+    private static String preURL = "https://ua.sinoptik.ua/погода-";
+    public static String userCity = "";
 
-    final String wind = EmojiParser.parseToUnicode(":dash:");
-    final String cloud = EmojiParser.parseToUnicode(":cloud:");
-    final String snow = EmojiParser.parseToUnicode(":snowflake:");
-
-    public static volatile String URL = "";
-    public static volatile String preURL = "https://ua.sinoptik.ua/погода-";
-    public static volatile String userCity = "";
-
-    public static boolean activeOfCityButton = false;
-    public static boolean activeOfAlarmButton = false;
-
+    private static boolean activeOfCityButton = false;
+    private static boolean activeOfAlarmButton = false;
 
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
+            /*Write all logs from chat*/
+            firstUserName = update.getMessage().getChat().getFirstName();
+            lastUserName = update.getMessage().getChat().getLastName();
+            userId = update.getMessage().getChat().getId();
+            userText = update.getMessage().getText();
+
+            logUser(firstUserName,lastUserName,userId,userText);
+
             Message updateMessage = update.getMessage();
             SendMessage startMessage = MenuButtons
-                    .createMainMenu(updateMessage,"Select any option");
+                    .createMainMenu(updateMessage,DEF_MESSAGE);
+
             try {
                 execute(startMessage);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
+        }
+            /*Today weather handler*/
             if (update.getMessage().getText().contains("TodayWeather")){
                 if(!URL.isEmpty()) {
                     Message message = update.getMessage();
@@ -65,19 +72,23 @@ public class BotBody extends TelegramLongPollingBot {
                         e.printStackTrace();
                     }
                 }
+                /*If city is not chosen and URL is
+                empty bot talk user to write any city*/
                 else if(URL.isEmpty()){
-                    SendMessage sendMessage = new SendMessage();
-                    sendMessage.setParseMode("HTML");
-                    sendMessage
+                    SendMessage todayWeatherHelpMessage = new SendMessage();
+                    todayWeatherHelpMessage.setParseMode("HTML");
+                    todayWeatherHelpMessage
                             .setChatId(update.getMessage().getChatId())
-                            .setText("First input your city with like:" + "\n" + "<i>Львів</i>");
+                            .setText(TODAY_WEATHER_HELP_MESSAGE);
                     try {
-                        execute(sendMessage);
+                        execute(todayWeatherHelpMessage);
                     } catch (TelegramApiException e) {
                         e.printStackTrace();
                     }
                 }
-            } else if (update.getMessage().getText().contains("Option")) {
+            }
+            /*Option menu handler*/
+            else if (update.getMessage().getText().contains("Option")) {
                 Message message = update.getMessage();
                 SendMessage optionMenu = MenuButtons.createOptionMenu(message,"Option menu");
                 try{
@@ -106,13 +117,16 @@ public class BotBody extends TelegramLongPollingBot {
                 }
 
             }
+            /*This checks if city is not empty,
+            * if city is filled with valid city
+            * bot can make a weather forecast for today*/
             else if(activeOfCityButton == true){
                 activeOfCityButton = false;
                 SendMessage cityChangesMessage = new SendMessage();
                 cityChangesMessage.setParseMode("HTML");
                 cityChangesMessage
                         .setChatId(update.getMessage().getChatId())
-                        .setText("<b>Your location is changed to:</b>" + "<i>" + update.getMessage().getText() + "</i>");
+                        .setText(CITY_UPDATE_MESSAGE + "<i>" + update.getMessage().getText() + "</i>");
                 LOG.info("URL before updating:" + URL);
                 userCity = update.getMessage().getText();
                 URL = preURL + update.getMessage().getText();
@@ -124,6 +138,7 @@ public class BotBody extends TelegramLongPollingBot {
                 }
 
             }
+            /*WeekForecast handler*/
             else if(update.getMessage().getText().contains("WeekForecast")){
                 if(!URL.isEmpty()){
                     SendMessage weekendForecast = new SendMessage();
@@ -141,11 +156,12 @@ public class BotBody extends TelegramLongPollingBot {
                         e.printStackTrace();
                     }
                 }
+                /*Also bot checks does user enter any city*/
                 else if(URL.isEmpty()){
                     SendMessage emptyCity = new SendMessage();
                     emptyCity.setParseMode("HTML");
                     emptyCity.setChatId(update.getMessage().getChatId())
-                            .setText("<b>Choose your city for week forecast</b>");
+                            .setText(WEEK_FORECAST_HELP_MESSAGE);
                     try{
                         execute(emptyCity);
                     } catch (TelegramApiException e) {
@@ -154,53 +170,56 @@ public class BotBody extends TelegramLongPollingBot {
                 }
 
             }
-         if(update.getMessage().getText().equalsIgnoreCase("alarm") ){
+            if(update.getMessage().getText().equalsIgnoreCase("alarm") ){
                 activeOfAlarmButton = true;
                 SendMessage alarmHelpMessage = new SendMessage()
-                .setParseMode("HTML");
+                        .setParseMode("HTML");
                 alarmHelpMessage.setChatId(update.getMessage().getChatId());
                 alarmHelpMessage.setText("<i>Write after how many seconds notification will be sent</i>");
-             try {
-                 execute(alarmHelpMessage);
-             } catch (TelegramApiException e) {
-                 e.printStackTrace();
-             }
-         }
-         else if(activeOfAlarmButton == true){
-             activeOfAlarmButton = false;
-             String notificationTime = update.getMessage().getText();
-             int wait = Integer.parseInt(notificationTime);
-             try {
-                 Thread.sleep(wait * 1000);
-                SendMessage alarmNotification = new SendMessage()
-                         .setParseMode("HTML");
-                 alarmNotification
-                         .setChatId(update.getMessage().getChatId())
-                         .setText("<code>Wake up, Neo..</code>" + "\n" +
-                                  "<code>The Matrix has you...</code>" + "\n" +
-                                  "<code>Follow the white rabbit.</code>" + "\n" + "\n" +
-                                  "<code>Knock, knock, Neo.</code>");
-                 int x = 0;
-                 while (x<1){
-                     execute(alarmNotification);
-                     LOG.info("Notification has sent");
-                     x++;
-                 }
+                try {
+                    execute(alarmHelpMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(activeOfAlarmButton == true){
+                activeOfAlarmButton = false;
+                String notificationTime = update.getMessage().getText();
+                int wait = Integer.parseInt(notificationTime);
+                try {
+                    Thread.sleep(wait * 1000);
+                    SendMessage alarmNotification = new SendMessage()
+                            .setParseMode("HTML");
+                    alarmNotification
+                            .setChatId(update.getMessage().getChatId())
+                            .setText("<code>Wake up, Neo..</code>");
+                    int x = 0;
+                    while (x<1){
+                        execute(alarmNotification);
+                        LOG.info("Notification has sent");
+                        x++;
+                    }
 
-             } catch (InterruptedException e) {
-                 e.printStackTrace();
-             } catch (TelegramApiException e) {
-                 e.printStackTrace();
-             }
-         }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-    }
-
     public String getBotUsername() {
         return "YusufTazimBot";
     }
-
     public String getBotToken() {
-        return "123456789:qwerty";
+        return "504366651:AAFce17tEjszVwu2zZFFLPzsTi5zgz8vnz8";
+    }
+    private void logUser(String firstName,String lastName,long userId,String userText){
+        LOG.info("\n-------------------------------");
+        LOG.info("Message from " + firstName + lastName + " which Id is:" + userId + ":"+ userText);
     }
 }
+
+
+
+
+
