@@ -1,12 +1,7 @@
 package com.bot;
 
-import com.manifest.Main;
-import com.vdurmont.emoji.EmojiParser;
+import com.alarm.Alarm;
 import com.weather.constants.Messages;
-import com.weather.jsoup.WeatherHandler;
-import com.weather.utilhandler.CloudCoverHandler;
-import com.weather.utilhandler.TemperatureHandler;
-import com.weather.utilhandler.WindSpeedHandler;
 import org.apache.log4j.Logger;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -16,7 +11,6 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 import java.io.IOException;
 
 import static com.weather.constants.Messages.*;
-import static com.weather.constants.Selectors.MORNING_WIND;
 
 /**
  * Created by M.Malyus on 2/21/2018.
@@ -185,9 +179,12 @@ public class BotBody extends TelegramLongPollingBot {
             else if(activeOfAlarmButton == true){
                 activeOfAlarmButton = false;
                 String notificationTime = update.getMessage().getText();
-                int wait = Integer.parseInt(notificationTime);
+
                 try {
-                    Thread.sleep(wait * 1000);
+                    Alarm alarm = new Alarm();
+                    alarm.setTime(notificationTime);
+                    alarm.createAlarm();
+
                     SendMessage alarmNotification = new SendMessage()
                             .setParseMode("HTML");
                     alarmNotification
@@ -199,9 +196,6 @@ public class BotBody extends TelegramLongPollingBot {
                         LOG.info("Notification has sent");
                         x++;
                     }
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
@@ -217,6 +211,8 @@ public class BotBody extends TelegramLongPollingBot {
         LOG.info("\n-------------------------------");
         LOG.info("Message from " + firstName + lastName + " which Id is:" + userId + ":"+ userText);
     }
+
+
 }
 
 

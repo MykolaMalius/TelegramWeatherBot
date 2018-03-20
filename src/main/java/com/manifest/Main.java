@@ -1,5 +1,6 @@
 package com.manifest;
 
+import com.alarm.Alarm;
 import com.bot.BotBody;
 import org.apache.log4j.Logger;
 import org.telegram.telegrambots.ApiContextInitializer;
